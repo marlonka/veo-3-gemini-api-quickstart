@@ -26,12 +26,12 @@ interface ComposerProps {
   showImageTools: boolean;
   setShowImageTools: React.Dispatch<React.SetStateAction<boolean>>;
 
-  imagePrompt: string;
-  setImagePrompt: (value: string) => void;
+  geminiPrompt: string;
+  setGeminiPrompt: (value: string) => void;
 
-  imagenBusy: boolean;
+  geminiBusy: boolean;
   onPickImage: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  generateWithImagen: () => Promise<void> | void;
+  generateWithGemini: () => Promise<void> | void;
 
   imageFile: File | null;
   generatedImage: string | null;
@@ -49,11 +49,11 @@ const Composer: React.FC<ComposerProps> = ({
   startGeneration,
   showImageTools,
   setShowImageTools,
-  imagePrompt,
-  setImagePrompt,
-  imagenBusy,
+  geminiPrompt,
+  setGeminiPrompt,
+  geminiBusy,
   onPickImage,
-  generateWithImagen,
+  generateWithGemini,
   imageFile,
   generatedImage,
   resetAll,
@@ -130,27 +130,27 @@ const Composer: React.FC<ComposerProps> = ({
               <div className="flex items-center gap-2 mt-3">
                 <input
                   type="text"
-                  value={imagePrompt}
-                  onChange={(e) => setImagePrompt(e.target.value)}
-                  placeholder="Describe the starting photo to generate..."
+                  value={geminiPrompt}
+                  onChange={(e) => setGeminiPrompt(e.target.value)}
+                  placeholder="Describe an image to generate, or an edit for the image above..."
                   className="flex-1 rounded-md bg-white/10 border border-white/20 px-3 py-2 placeholder-slate-800/60 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <button
-                  onClick={generateWithImagen}
-                  disabled={!imagePrompt.trim() || imagenBusy}
-                  aria-busy={imagenBusy}
+                  onClick={generateWithGemini}
+                  disabled={!geminiPrompt.trim() || geminiBusy}
+                  aria-busy={geminiBusy}
                   className={`inline-flex items-center gap-2 px-3 py-2 rounded-md transition ${
-                    !imagePrompt.trim() || imagenBusy
+                    !geminiPrompt.trim() || geminiBusy
                       ? "opacity-60 cursor-not-allowed"
                       : "bg-black/80 hover:bg-black text-white cursor-pointer"
                   }`}
                 >
-                  {imagenBusy ? (
+                  {geminiBusy ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Wand2 className="w-4 h-4" />
                   )}
-                  {imagenBusy ? "Generating" : "Generate"}
+                  {geminiBusy ? "Generating" : "Generate with Gemini"}
                 </button>
               </div>
             </div>

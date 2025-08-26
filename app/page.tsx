@@ -23,11 +23,11 @@ const VeoStudio: React.FC = () => {
     "veo-3.0-generate-preview"
   );
 
-  // Imagen-specific prompt
-  const [imagePrompt, setImagePrompt] = useState("");
+  // Gemini-specific prompt
+  const [geminiPrompt, setGeminiPrompt] = useState("");
 
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagenBusy, setImagenBusy] = useState(false);
+  const [geminiBusy, setGeminiBusy] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null); // data URL
 
   const [operationName, setOperationName] = useState<VeoOperationName>(null);
@@ -50,7 +50,7 @@ const VeoStudio: React.FC = () => {
     setPrompt("");
     setNegativePrompt("");
     setAspectRatio("16:9");
-    setImagePrompt("");
+    setGeminiPrompt("");
     setImageFile(null);
     setGeneratedImage(null);
     setOperationName(null);
@@ -67,27 +67,49 @@ const VeoStudio: React.FC = () => {
     trimmedBlobRef.current = null;
   };
 
-  // Imagen helper
-  const generateWithImagen = useCallback(async () => {
-    setImagenBusy(true);
+  // Gemini helper
+  const generateWithGemini = useCallback(async () => {
+    setGeminiBusy(true);
     setGeneratedImage(null);
     try {
-      const resp = await fetch("/api/imagen/generate", {
+      const form = new FormData();
+      form.append("prompt", geminiPrompt);
+
+      // We can use imageFile (from upload) or generatedImage (from previous generation)
+      if (imageFile) {
+        form.append("imageFile", imageFile);
+      } else if (generatedImage) {
+        const [meta, b64] = generatedImage.split(",");
+        const mime = meta?.split(";")?.[0]?.replace("data:", "") || "image/png";
+        form.append("imageBase64", b64);
+        form.append("imageMimeType", mime);
+      }
+
+      const resp = await fetch("/api/gemini/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: imagePrompt }),
+        body: form,
       });
+
       const json = await resp.json();
+
+      if (json?.error) {
+        alert(`Error: ${json.error}`);
+        return;
+      }
+
       if (json?.image?.imageBytes) {
         const dataUrl = `data:${json.image.mimeType};base64,${json.image.imageBytes}`;
         setGeneratedImage(dataUrl);
+        // If we generated a new image, we should clear the uploaded file
+        setImageFile(null);
       }
     } catch (e) {
       console.error(e);
+      alert(`An error occurred: ${e instanceof Error ? e.message : "Unknown error"}`);
     } finally {
-      setImagenBusy(false);
+      setGeminiBusy(false);
     }
-  }, [imagePrompt]);
+  }, [geminiPrompt, imageFile, generatedImage]);
 
   // Start Veo job
   const startGeneration = useCallback(async () => {
@@ -267,11 +289,11 @@ const VeoStudio: React.FC = () => {
         startGeneration={startGeneration}
         showImageTools={showImageTools}
         setShowImageTools={setShowImageTools}
-        imagePrompt={imagePrompt}
-        setImagePrompt={setImagePrompt}
-        imagenBusy={imagenBusy}
+        geminiPrompt={geminiPrompt}
+        setGeminiPrompt={setGeminiPrompt}
+        geminiBusy={geminiBusy}
         onPickImage={onPickImage}
-        generateWithImagen={generateWithImagen}
+        generateWithGemini={generateWithGemini}
         imageFile={imageFile}
         generatedImage={generatedImage}
         resetAll={resetAll}
