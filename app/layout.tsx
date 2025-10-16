@@ -24,17 +24,21 @@ export const metadata: Metadata = {
   },
 };
 
+import { ThemeProvider } from "@/components/ThemeProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${manrope.variable} ${sourceCodePro.variable}`}>
-        <div className="bg-gray-200 text-stone-900">
-          <main>{children}</main>
-        </div>
+        <ThemeProvider>
+          <div className="bg-white text-stone-900 dark:bg-gray-900 dark:text-stone-100">
+            <main>{children}</main>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

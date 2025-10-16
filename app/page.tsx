@@ -11,7 +11,8 @@ import Image from "next/image";
 import { Upload, Film, Image as ImageIcon } from "lucide-react";
 import Composer from "@/components/ui/Composer";
 import VideoPlayer from "@/components/ui/VideoPlayer";
-import { Skeleton } from "@/components/ui/skeleton";
+import PromptMagicModal from "@/components/ui/PromptMagicModal";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 type VeoOperationName = string | null;
 
@@ -28,12 +29,12 @@ const VeoStudio: React.FC = () => {
   const [prompt, setPrompt] = useState(""); // Video or image prompt
   const [negativePrompt, setNegativePrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState("16:9");
-  const [selectedModel, setSelectedModel] = useState("veo-3.0-generate-001");
+  const [selectedModel, setSelectedModel] = useState("veo-3.1-generate-preview");
 
   // Update selected model when mode changes
   useEffect(() => {
     if (mode === "create-video") {
-      setSelectedModel("veo-3.0-generate-001");
+      setSelectedModel("veo-3.1-generate-preview");
     } else if (mode === "edit-image" || mode === "compose-image") {
       setSelectedModel("gemini-2.5-flash-image-preview");
     } else if (mode === "create-image") {
@@ -52,10 +53,15 @@ const VeoStudio: React.FC = () => {
   const [composePrompt, setComposePrompt] = useState("");
 
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [lastFrameFile, setLastFrameFile] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [lastFrameUrl, setLastFrameUrl] = useState<string | null>(null);
   const [multipleImageFiles, setMultipleImageFiles] = useState<File[]>([]);
+  const [referenceImageFiles, setReferenceImageFiles] = useState<File[]>([]);
   const [imagenBusy, setImagenBusy] = useState(false);
   const [geminiBusy, setGeminiBusy] = useState(false);
+  const [promptMagicBusy, setPromptMagicBusy] = useState(false);
+  const [suggestedPrompt, setSuggestedPrompt] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null); // data URL
 
   // Debug multipleImageFiles state
@@ -83,10 +89,28 @@ const VeoStudio: React.FC = () => {
     };
   }, [imageFile]);
 
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    if (lastFrameFile) {
+      objectUrl = URL.createObjectURL(lastFrameFile);
+      setLastFrameUrl(objectUrl);
+    } else {
+      setLastFrameUrl(null);
+    }
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [lastFrameFile]);
+
   const [operationName, setOperationName] = useState<VeoOperationName>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isExtending, setIsExtending] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const videoBlobRef = useRef<Blob | null>(null);
+  const videoFileForExtension = useRef<File | null>(null);
   const trimmedBlobRef = useRef<Blob | null>(null);
 
   const trimmedUrlRef = useRef<string | null>(null);
@@ -115,8 +139,8 @@ const VeoStudio: React.FC = () => {
         "Kidding, this takes a while...",
         "Haha sorry",
         "Did you know? That Trees are the second most photographed object in the world after the Sun.",
-        "That's why we need to make sure your video is perfect.",
-        "We're working on it...",
+        "That’s why we need to make sure your video is perfect.",
+        "We’re working on it...",
         "Hang on a sec...",
         "Almost done...",
         "One more step...",
@@ -141,7 +165,7 @@ const VeoStudio: React.FC = () => {
       "Crazy what progress can be made in a few seconds?",
       "Let me check on it...",
       "Okay almost done...",
-      "I promise I'm working on it...",
+      "I promise I’m working on it...",
     ];
   }, [mode, modelLabel]);
 
@@ -418,7 +442,7 @@ const VeoStudio: React.FC = () => {
 
     if (mode === "create-video") {
       setIsGenerating(true);
-      setVideoUrl(null);
+      setVideoUrl(null); // Clear previous video
 
       const form = new FormData();
       form.append("prompt", prompt);
@@ -426,7 +450,11 @@ const VeoStudio: React.FC = () => {
       if (negativePrompt) form.append("negativePrompt", negativePrompt);
       if (aspectRatio) form.append("aspectRatio", aspectRatio);
 
-      if (imageFile || generatedImage) {
+      // Handle video extension
+      if (isExtending && videoFileForExtension.current) {
+        form.append("videoFile", videoFileForExtension.current);
+      } else {
+        // Handle regular image/frame inputs only if not extending
         if (imageFile) {
           form.append("imageFile", imageFile);
         } else if (generatedImage) {
@@ -435,6 +463,14 @@ const VeoStudio: React.FC = () => {
             meta?.split(";")?.[0]?.replace("data:", "") || "image/png";
           form.append("imageBase64", b64);
           form.append("imageMimeType", mime);
+        }
+        if (lastFrameFile) {
+          form.append("lastFrameFile", lastFrameFile);
+        }
+        if (referenceImageFiles.length > 0) {
+          for (const file of referenceImageFiles) {
+            form.append("referenceImageFiles", file);
+          }
         }
       }
 
@@ -445,9 +481,11 @@ const VeoStudio: React.FC = () => {
         });
         const json = await resp.json();
         setOperationName(json?.name || null);
+        setIsExtending(false); // Reset extending state after starting
       } catch (e) {
         console.error(e);
         setIsGenerating(false);
+        setIsExtending(false);
       }
     } else if (mode === "create-image") {
       // Use selected model (Imagen or Gemini)
@@ -474,6 +512,9 @@ const VeoStudio: React.FC = () => {
     generateWithGemini,
     editWithGemini,
     composeWithGemini,
+    isExtending,
+    lastFrameFile,
+    referenceImageFiles,
   ]);
 
   // Poll operation until done then download
@@ -528,6 +569,13 @@ const VeoStudio: React.FC = () => {
     }
   };
 
+  const onPickLastFrame = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      setLastFrameFile(f);
+    }
+  };
+
   const onPickMultipleImages = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
@@ -535,6 +583,17 @@ const VeoStudio: React.FC = () => {
       const limitedFiles = imageFiles.slice(0, 10);
       setMultipleImageFiles((prevFiles) =>
         [...prevFiles, ...limitedFiles].slice(0, 10)
+      );
+    }
+  };
+
+  const onPickReferenceImages = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+      const limitedFiles = imageFiles.slice(0, 3); // Max 3 reference images
+      setReferenceImageFiles((prevFiles) =>
+        [...prevFiles, ...limitedFiles].slice(0, 3)
       );
     }
   };
@@ -577,6 +636,54 @@ const VeoStudio: React.FC = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }, 0);
+  };
+
+  const handleStartExtension = () => {
+    if (!videoBlobRef.current) return;
+    // Convert the Blob to a File
+    const videoFile = new File([videoBlobRef.current], "video-to-extend.mp4", {
+      type: videoBlobRef.current.type,
+    });
+    videoFileForExtension.current = videoFile;
+    setIsExtending(true);
+    setPrompt(""); // Clear prompt for extension
+    // Keep the video player visible, but prepare for a new generation
+    setOperationName(null);
+  };
+
+  const handlePromptMagic = async () => {
+    const currentPrompt =
+      mode === "create-video"
+        ? prompt
+        : mode === "create-image"
+        ? imagePrompt
+        : mode === "edit-image"
+        ? editPrompt
+        : composePrompt;
+
+    if (!currentPrompt.trim()) return;
+
+    setPromptMagicBusy(true);
+    setSuggestedPrompt(null);
+    try {
+      const resp = await fetch("/api/gemini/prompt-magic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: currentPrompt }),
+      });
+      if (!resp.ok) {
+        throw new Error("Failed to get suggestion.");
+      }
+      const json = await resp.json();
+      if (json.suggestedPrompt) {
+        setSuggestedPrompt(json.suggestedPrompt);
+      }
+    } catch (e) {
+      console.error("Prompt Magic error:", e);
+      alert("Could not generate a suggestion. Please try again.");
+    } finally {
+      setPromptMagicBusy(false);
+    }
   };
 
   const downloadImage = async () => {
@@ -645,11 +752,30 @@ const VeoStudio: React.FC = () => {
 
   return (
     <div
-      className="relative min-h-screen w-full text-stone-900"
+      className="relative min-h-screen w-full text-stone-900 dark:text-stone-100"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
+      <div className="absolute top-4 right-4 z-30">
+        <ThemeToggle />
+      </div>
+
+      {suggestedPrompt && (
+        <PromptMagicModal
+          suggestion={suggestedPrompt}
+          onAccept={() => {
+            if (mode === "create-video") setPrompt(suggestedPrompt);
+            else if (mode === "create-image") setImagePrompt(suggestedPrompt);
+            else if (mode === "edit-image") setEditPrompt(suggestedPrompt);
+            else if (mode === "compose-image")
+              setComposePrompt(suggestedPrompt);
+            setSuggestedPrompt(null);
+          }}
+          onCancel={() => setSuggestedPrompt(null)}
+        />
+      )}
+
       {/* Main content area */}
       <div className="flex flex-col items-center justify-center min-h-screen pb-40 px-4">
         {!videoUrl &&
@@ -664,8 +790,11 @@ const VeoStudio: React.FC = () => {
                 <div className="inline-flex items-center rounded-full bg-gray-200/70 px-3 py-1 text-xs font-medium text-gray-700 dark:bg-gray-700/60 dark:text-gray-200">
                   {modelLabel}
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-300">
-                  {loadingMessages[loadingIndex % loadingMessages.length]}
+                <div
+                  className="text-xs text-gray-600 dark:text-gray-300"
+                  key={loadingIndex}
+                >
+                  {loadingMessages[loadingIndex % loadingMessages.length].replace(/'/g, "&apos;")}
                 </div>
                 <div className="mt-2 h-1 w-48 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                   <div className="h-full w-full animate-[shimmer_1.6s_infinite] -translate-x-full rounded-full bg-gray-400/70 dark:bg-gray-500/70" />
@@ -677,7 +806,7 @@ const VeoStudio: React.FC = () => {
               {((mode === "edit-image" && !imageFile && !generatedImage) ||
                 (mode === "create-video" && !imageFile && !generatedImage)) && (
                 <div
-                  className={`rounded-lg border-2 border-dashed p-8 cursor-pointer transition-colors ${"bg-white/10 border-gray-300/70 hover:bg-white/30"}`}
+                  className={`rounded-lg border-2 border-dashed p-8 cursor-pointer transition-colors bg-white/10 border-gray-300/70 hover:bg-white/30 dark:bg-gray-800/20 dark:border-gray-600/70 dark:hover:bg-gray-800/40`}
                   onClick={() => {
                     // Trigger single file input
                     const input = document.getElementById(
@@ -686,7 +815,7 @@ const VeoStudio: React.FC = () => {
                     input?.click();
                   }}
                 >
-                  <div className="flex flex-col items-center gap-3 text-slate-800/80">
+                  <div className="flex flex-col items-center gap-3 text-slate-800/80 dark:text-slate-200/80">
                     <Upload className="w-8 h-8" />
                     <div className="text-center">
                       <div className="font-medium text-lg">
@@ -725,12 +854,63 @@ const VeoStudio: React.FC = () => {
                 </div>
               )}
 
+              {mode === "create-video" && (imageFile || generatedImage) && (
+                <div className="flex justify-center items-start gap-4">
+                  <div className="w-1/2 aspect-video overflow-hidden rounded-lg border relative">
+                    <Image
+                      src={uploadedImageUrl || generatedImage || ""}
+                      alt="First frame"
+                      className="w-full h-full object-contain"
+                      width={400}
+                      height={225}
+                    />
+                    <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                      First Frame
+                    </div>
+                  </div>
+                  <div className="w-1/2">
+                    {lastFrameUrl ? (
+                      <div className="w-full aspect-video overflow-hidden rounded-lg border relative">
+                        <Image
+                          src={lastFrameUrl}
+                          alt="Last frame"
+                          className="w-full h-full object-contain"
+                          width={400}
+                          height={225}
+                        />
+                        <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                          Last Frame
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className={`w-full aspect-video rounded-lg border-2 border-dashed p-8 cursor-pointer transition-colors flex flex-col items-center justify-center ${"bg-white/10 border-gray-300/70 hover:bg-white/30"}`}
+                        onClick={() => {
+                          const input = document.getElementById(
+                            "last-frame-input"
+                          ) as HTMLInputElement;
+                          input?.click();
+                        }}
+                      >
+                        <Upload className="w-8 h-8 text-slate-800/80" />
+                        <div className="text-center text-slate-800/80 mt-2">
+                          <div className="font-medium">Add Last Frame</div>
+                          <div className="text-sm opacity-80">
+                            (for interpolation)
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {!(
                 mode === "edit-image" ||
                 mode === "compose-image" ||
                 mode === "create-video"
               ) && (
-                <div className="text-stone-400 select-none text-center w-full">
+                <div className="text-stone-400 dark:text-stone-600 select-none text-center w-full">
                   Nothing to see here
                 </div>
               )}
@@ -751,6 +931,81 @@ const VeoStudio: React.FC = () => {
                 className="hidden"
                 onChange={onPickMultipleImages}
               />
+              <input
+                id="last-frame-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={onPickLastFrame}
+              />
+              <input
+                id="reference-images-input"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={onPickReferenceImages}
+              />
+
+              {/* Reference Images Uploader (Veo 3.1) */}
+              {mode === "create-video" && (
+                <div className="w-full max-w-3xl mt-4">
+                  <div className="text-center text-slate-600 mb-4">
+                    <h3 className="text-md font-medium">
+                      Reference Images (Optional)
+                    </h3>
+                    <p className="text-xs opacity-70">
+                      Add up to 3 images to guide the video's content (e.g., a
+                      character, object, or style).
+                    </p>
+                  </div>
+                  <div
+                    className={`rounded-lg border-2 border-dashed p-6 cursor-pointer transition-colors ${"bg-white/10 border-gray-300/70 hover:bg-white/30"}`}
+                    onClick={() => {
+                      const input = document.getElementById(
+                        "reference-images-input"
+                      ) as HTMLInputElement;
+                      input?.click();
+                    }}
+                  >
+                    <div className="flex flex-col items-center gap-2 text-slate-800/80">
+                      <Upload className="w-7 h-7" />
+                      <div className="text-center">
+                        <div className="font-medium text-md">
+                          Drop reference images here, or click to upload
+                        </div>
+                        <div className="text-xs opacity-80 mt-1">
+                          You can add up to {3 - referenceImageFiles.length}{" "}
+                          more.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Thumbnails for reference images */}
+                  {referenceImageFiles.length > 0 && (
+                    <div className="mt-4">
+                      <div className="flex flex-wrap gap-3 justify-center">
+                        {referenceImageFiles.map((file, index) => (
+                          <div
+                            key={index}
+                            className="w-24 h-24 rounded-lg overflow-hidden border-2 border-white/30 shadow-md"
+                            title={file.name}
+                          >
+                            <Image
+                              src={URL.createObjectURL(file)}
+                              alt={`Reference ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              width={96}
+                              height={96}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Compose mode initial state when no generated image */}
               {mode === "compose-image" && !generatedImage && (
@@ -933,6 +1188,8 @@ const VeoStudio: React.FC = () => {
                 onOutputChanged={handleTrimmedOutput}
                 onDownload={downloadVideo}
                 onResetTrim={handleResetTrimState}
+                onExtend={handleStartExtension}
+                canExtend={!isExtending}
               />
             </div>
           </div>
@@ -960,6 +1217,8 @@ const VeoStudio: React.FC = () => {
         geminiBusy={geminiBusy}
         resetAll={resetAll}
         downloadImage={downloadImage}
+        onPromptMagic={handlePromptMagic}
+        promptMagicBusy={promptMagicBusy}
       />
     </div>
   );

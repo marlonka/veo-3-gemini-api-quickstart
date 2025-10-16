@@ -11,12 +11,16 @@ import {
   Download,
 } from "lucide-react";
 
+import { FileVideo } from "lucide-react";
+
 interface VideoPlayerProps {
   src: string;
   // Called when a new output is produced (e.g., after trimming and exporting)
   onOutputChanged?: (blob: Blob) => void;
   onDownload?: () => void;
   onResetTrim?: () => void;
+  onExtend?: () => void;
+  canExtend?: boolean;
 }
 
 const formatTime = (seconds: number) => {
@@ -38,6 +42,8 @@ export default function VideoPlayer({
   onOutputChanged,
   onDownload,
   onResetTrim,
+  onExtend,
+  canExtend = false,
 }: VideoPlayerProps) {
   const playerRef = useRef<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -521,6 +527,14 @@ export default function VideoPlayer({
               className="ml-1 focus:outline-none text-black hover:opacity-80"
             >
               <Download className="w-5 h-5" />
+            </button>
+            <button
+              onClick={onExtend}
+              title="Extend Video"
+              disabled={!canExtend}
+              className="ml-1 focus:outline-none text-black hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileVideo className="w-5 h-5" />
             </button>
           </div>
         </div>
