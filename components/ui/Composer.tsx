@@ -50,6 +50,8 @@ interface ComposerProps {
 
   resetAll: () => void;
   downloadImage: () => void;
+  onPromptMagic: () => void;
+  promptMagicBusy: boolean;
 }
 
 const Composer: React.FC<ComposerProps> = ({
@@ -74,6 +76,8 @@ const Composer: React.FC<ComposerProps> = ({
   geminiBusy,
   resetAll,
   downloadImage,
+  onPromptMagic,
+  promptMagicBusy,
 }) => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -129,12 +133,12 @@ const Composer: React.FC<ComposerProps> = ({
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-[min(100%,48rem)] px-4">
-      <div className="relative text-slate-900/80 backdrop-blur-sm bg-white/30 px-3 py-1 rounded-lg ">
+      <div className="relative text-slate-900/80 dark:text-slate-200/80 backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 px-3 py-1 rounded-lg border border-white/20 dark:border-gray-700/50">
         {hasGeneratedImage && !hasVideoUrl && (
           <div className="absolute -top-12 right-0 z-10">
             <button
               onClick={downloadImage}
-              className="inline-flex items-center gap-2 bg-white/30 hover:bg-white text-slate-700 py-2 px-4 rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 bg-white/30 hover:bg-white text-slate-700 dark:bg-gray-700/50 dark:hover:bg-gray-700 dark:text-slate-200 py-2 px-4 rounded-lg transition-colors"
               title="Download Image"
             >
               <Download className="w-4 h-4" />
@@ -148,57 +152,73 @@ const Composer: React.FC<ComposerProps> = ({
             setSelectedModel={setSelectedModel}
             mode={mode}
           />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={onPromptMagic}
+                disabled={promptMagicBusy}
+                className="p-2 rounded-full hover:bg-white/50 transition-colors disabled:opacity-50 disabled:cursor-wait"
+              >
+                <Sparkles className="w-5 h-5 text-purple-600" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Enhance prompt with AI</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
-        {mode === "create-video" && (
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Generate a video with text and frames..."
-            className="w-full bg-transparent focus:outline-none resize-none text-base font-normal placeholder-slate-800/60"
-            rows={2}
-          />
-        )}
+        <div className="relative">
+          {mode === "create-video" && (
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Generate a video with text and frames..."
+              className="w-full bg-transparent focus:outline-none resize-none text-base font-normal placeholder-slate-800/60 dark:placeholder-slate-200/60"
+              rows={2}
+            />
+          )}
 
-        {mode === "create-image" && (
-          <textarea
-            value={imagePrompt}
-            onChange={(e) => setImagePrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe the image to create..."
-            className="w-full bg-transparent focus:outline-none resize-none text-base font-normal placeholder-slate-800/60"
-            rows={2}
-          />
-        )}
+          {mode === "create-image" && (
+            <textarea
+              value={imagePrompt}
+              onChange={(e) => setImagePrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Describe the image to create..."
+              className="w-full bg-transparent focus:outline-none resize-none text-base font-normal placeholder-slate-800/60 dark:placeholder-slate-200/60"
+              rows={2}
+            />
+          )}
 
-        {mode === "edit-image" && (
-          <textarea
-            value={editPrompt}
-            onChange={(e) => setEditPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe how to edit the image..."
-            className="w-full bg-transparent focus:outline-none resize-none text-base font-normal placeholder-slate-800/60"
-            rows={2}
-          />
-        )}
+          {mode === "edit-image" && (
+            <textarea
+              value={editPrompt}
+              onChange={(e) => setEditPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Describe how to edit the image..."
+              className="w-full bg-transparent focus:outline-none resize-none text-base font-normal placeholder-slate-800/60 dark:placeholder-slate-200/60"
+              rows={2}
+            />
+          )}
 
-        {mode === "compose-image" && (
-          <textarea
-            value={composePrompt}
-            onChange={(e) => setComposePrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe how to combine the images..."
-            className="w-full bg-transparent focus:outline-none resize-none text-base font-normal placeholder-slate-800/60"
-            rows={2}
-          />
-        )}
+          {mode === "compose-image" && (
+            <textarea
+              value={composePrompt}
+              onChange={(e) => setComposePrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Describe how to combine the images..."
+              className="w-full bg-transparent focus:outline-none resize-none text-base font-normal placeholder-slate-800/60 dark:placeholder-slate-200/60"
+              rows={2}
+            />
+          )}
+        </div>
 
         <div className="flex items-center justify-between mt-3">
           <div className="flex items-center gap-2">
             <button
               onClick={handleReset}
-              className="h-10 w-10 flex items-center justify-center bg-white/50 rounded-full hover:bg-white/70 cursor-pointer"
+              className="h-10 w-10 flex items-center justify-center bg-white/50 dark:bg-gray-700/50 rounded-full hover:bg-white/70 dark:hover:bg-gray-700 cursor-pointer"
               title="Reset"
             >
               <RotateCcw className="w-5 h-5" />
@@ -208,10 +228,10 @@ const Composer: React.FC<ComposerProps> = ({
             onClick={startGeneration}
             disabled={!canStart || isGenerating || geminiBusy}
             aria-busy={isGenerating || geminiBusy}
-            className={`h-10 w-10 flex items-center justify-center rounded-full text-white transition ${
+            className={`h-10 w-10 flex items-center justify-center rounded-full text-white dark:text-black transition ${
               !canStart || isGenerating || geminiBusy
-                ? "bg-white/50 cursor-not-allowed"
-                : "bg-white/50 hover:bg-white/70 cursor-pointer"
+                ? "bg-white/50 dark:bg-gray-600/50 cursor-not-allowed"
+                : "bg-white/50 dark:bg-gray-300/50 hover:bg-white/70 dark:hover:bg-gray-300 cursor-pointer"
             }`}
             title={
               mode === "create-image"
@@ -248,7 +268,7 @@ const Composer: React.FC<ComposerProps> = ({
                     : "text-slate-700 hover:bg-white/30 hover:text-slate-900"
                 }`}
               >
-                <Image className="w-4 h-4" aria-hidden="true" />
+                <Image alt="Create" className="w-4 h-4" aria-hidden="true" />
                 {getTabText("create-image")}
               </button>
             </TooltipTrigger>

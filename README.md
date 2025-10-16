@@ -1,6 +1,6 @@
-# Gemini API Veo 3 & Nano Banana Quickstart
+# Gemini API Veo 3.1 & Nano Banana Quickstart
 
-A NextJs quickstart for creating and editing images and videos using Google's latest Gemini API models including [Veo 3](https://ai.google.dev/gemini-api/docs/video), [Imagen 4](https://ai.google.dev/gemini-api/docs/imagen), and [Gemini 2.5 Flash Image aka nano banana](https://ai.google.dev/gemini-api/docs/image-generations). 
+A NextJs quickstart for creating and editing images and videos using Google's latest Gemini API models including [Veo 3.1](https://ai.google.dev/gemini-api/docs/video), [Imagen 4](https://ai.google.dev/gemini-api/docs/imagen), and [Gemini 2.5 Flash Image aka nano banana](https://ai.google.dev/gemini-api/docs/image-generations).
 
 <table>
   <tr>
@@ -34,12 +34,17 @@ The quickstart provides a unified composer UI with different modes for content c
 -   **Create Image**: Generate images from text prompts using **Imagen 4** or **Gemini 2.5 Flash Image**.
 -   **Edit Image**: Edit an image based on a text prompt using **Gemini 2.5 Flash Image**.
 -   **Compose Image**: Combine multiple images with a text prompt to create a new image using **Gemini 2.5 Flash Image**.
--   **Create Video**: Generate videos from text prompts or an initial image using **Veo 3**.
+-   **Create Video**: Generate videos from text prompts or an initial image using **Veo 3.1**.
+-   **Extend Video**: Extend existing Veo-generated videos with a new prompt.
+-   **Interpolate Video**: Generate a video by providing a start and end frame.
+-   **Reference Images**: Use up to three images to guide the video generation process.
 
 ### Quick Actions & UI Features
 - Seamless navigation between modes after generating content
 - Download generated images & videos
 - Cut videos directly in the browser to specific time ranges
+- **Prompt Magic**: Enhance your prompts with AI using Gemini 2.5 Flash.
+- **Dark Mode**: Toggle between light and dark modes for a better user experience.
 
 
 ## Getting Started: Development and Local Testing
@@ -105,9 +110,12 @@ The application uses the following API routes to interact with the Google models
 -   `app/api/gemini/edit/route.ts`: Handles image editing and composition with Gemini 2.5 Flash (supports multiple images)
 
 ### Video APIs
--   `app/api/veo/generate/route.ts`: Handles video generation requests with Veo 3
--   `app/api/veo/operation/route.ts`: Checks the status of video generation operations
--   `app/api/veo/download/route.ts`: Downloads generated videos
+-   `app/api/veo/generate/route.ts`: Handles video generation requests with Veo 3.1, including extension, interpolation, and reference images.
+-   `app/api/veo/operation/route.ts`: Checks the status of video generation operations.
+-   `app/api/veo/download/route.ts`: Downloads generated videos.
+
+### Other APIs
+-   `app/api/gemini/prompt-magic/route.ts`: Enhances user prompts with Gemini 2.5 Flash.
 
 ## Technologies Used
 
