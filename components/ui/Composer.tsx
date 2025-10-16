@@ -9,6 +9,7 @@ import {
   Video,
   Download,
   Sparkles,
+  Wand2,
 } from "lucide-react";
 import ModelSelector from "@/components/ui/ModelSelector";
 import {
@@ -159,11 +160,11 @@ const Composer: React.FC<ComposerProps> = ({
                 disabled={promptMagicBusy}
                 className="p-2 rounded-full hover:bg-white/50 transition-colors disabled:opacity-50 disabled:cursor-wait"
               >
-                <Sparkles className="w-5 h-5 text-purple-600" />
+                <Wand2 className="w-5 h-5 text-purple-500" />
               </button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Enhance prompt with AI</p>
+              <p>Prompt Magic</p>
             </TooltipContent>
           </Tooltip>
         </div>
