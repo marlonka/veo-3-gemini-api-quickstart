@@ -806,7 +806,7 @@ const VeoStudio: React.FC = () => {
               {((mode === "edit-image" && !imageFile && !generatedImage) ||
                 (mode === "create-video" && !imageFile && !generatedImage)) && (
                 <div
-                  className={`rounded-lg border-2 border-dashed p-8 cursor-pointer transition-colors bg-white/10 border-gray-300/70 hover:bg-white/30 dark:bg-gray-800/20 dark:border-gray-600/70 dark:hover:bg-gray-800/40`}
+                  className={`rounded-lg border-2 border-dashed p-8 cursor-pointer transition-colors bg-white/10 border-gray-300/70 hover:bg-white/30 dark:bg-gray-900/20 dark:border-gray-500/70 dark:hover:bg-gray-900/40`}
                   onClick={() => {
                     // Trigger single file input
                     const input = document.getElementById(
@@ -815,7 +815,7 @@ const VeoStudio: React.FC = () => {
                     input?.click();
                   }}
                 >
-                  <div className="flex flex-col items-center gap-3 text-slate-800/80 dark:text-slate-200/80">
+                  <div className="flex flex-col items-center gap-3 text-slate-800/80 dark:text-slate-100/80">
                     <Upload className="w-8 h-8" />
                     <div className="text-center">
                       <div className="font-medium text-lg">

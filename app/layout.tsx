@@ -35,7 +35,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${manrope.variable} ${sourceCodePro.variable}`}>
         <ThemeProvider>
-          <div className="bg-white text-stone-900 dark:bg-gray-900 dark:text-stone-100">
+          <div className="bg-white text-stone-900 dark:bg-black dark:text-stone-100">
             <main>{children}</main>
           </div>
         </ThemeProvider>

@@ -8,7 +8,7 @@ import {
   Palette,
   Video,
   Download,
-  Sparkles,
+  Wand,
 } from "lucide-react";
 import ModelSelector from "@/components/ui/ModelSelector";
 import {
@@ -133,12 +133,12 @@ const Composer: React.FC<ComposerProps> = ({
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-[min(100%,48rem)] px-4">
-      <div className="relative text-slate-900/80 dark:text-slate-200/80 backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 px-3 py-1 rounded-lg border border-white/20 dark:border-gray-700/50">
+      <div className="relative text-slate-900/80 dark:text-slate-100/80 backdrop-blur-sm bg-white/30 dark:bg-gray-900/50 px-3 py-1 rounded-lg border border-white/20 dark:border-gray-500/50">
         {hasGeneratedImage && !hasVideoUrl && (
           <div className="absolute -top-12 right-0 z-10">
             <button
               onClick={downloadImage}
-              className="inline-flex items-center gap-2 bg-white/30 hover:bg-white text-slate-700 dark:bg-gray-700/50 dark:hover:bg-gray-700 dark:text-slate-200 py-2 px-4 rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 bg-white/30 hover:bg-white text-slate-700 dark:bg-gray-800/50 dark:hover:bg-gray-800 dark:text-slate-100 py-2 px-4 rounded-lg transition-colors"
               title="Download Image"
             >
               <Download className="w-4 h-4" />
@@ -159,11 +159,11 @@ const Composer: React.FC<ComposerProps> = ({
                 disabled={promptMagicBusy}
                 className="p-2 rounded-full hover:bg-white/50 transition-colors disabled:opacity-50 disabled:cursor-wait"
               >
-                <Sparkles className="w-5 h-5 text-purple-600" />
+                <Wand className="w-5 h-5 text-purple-600" />
               </button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Enhance prompt with AI</p>
+              <p>Prompt Magic</p>
             </TooltipContent>
           </Tooltip>
         </div>
