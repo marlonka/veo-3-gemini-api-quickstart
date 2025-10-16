@@ -28,12 +28,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
     }
 
-    const chat = model.startChat({
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
       systemInstruction: PROMPT_MAGIC_SYSTEM_INSTRUCTION,
-      history: [],
     });
-
-    const result = await chat.sendMessage(prompt);
     const suggestedPrompt = result.response.text();
 
     return NextResponse.json({ suggestedPrompt });
